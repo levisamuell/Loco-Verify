@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export async function POST(req: Request) {
   try {
@@ -13,7 +14,8 @@ export async function POST(req: Request) {
     }
 
     const bucket = process.env.NEXT_PUBLIC_AWS_S3_BUCKET!;
-    const region = process.env.AWS_REGION!;
+    const region = process.env.AWS_REGION || "us-east-1";
+
     const key = `licenses/${licenseId}/${field}-${Date.now()}-${fileName}`;
 
     const client = new S3Client({
@@ -31,7 +33,8 @@ export async function POST(req: Request) {
       ACL: "public-read",
     });
 
-    const uploadUrl = await client.getSignedUrl(command, { expiresIn: 60 });
+    // ✅ Correct AWS SDK v3 method for presigning URLs
+    const uploadUrl = await getSignedUrl(client, command, { expiresIn: 60 });
 
     const fileUrl = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 

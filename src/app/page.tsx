@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import Header from "@/components/Header";
 import {
   UserPlus,
@@ -17,7 +16,7 @@ import {
 } from "lucide-react";
 
 // Stats widget
-const StatCard = ({ number, label }) => (
+const StatCard = ({ number, label }: { number: string | number; label: string }) => (
   <div className="text-center">
     <div className="text-4xl font-bold text-blue-400 mb-2">{number}</div>
     <div className="text-gray-400 text-sm">{label}</div>
@@ -25,7 +24,7 @@ const StatCard = ({ number, label }) => (
 );
 
 // Feature widget
-const FeatureCard = ({ Icon, title, description }) => (
+const FeatureCard = ({ Icon, title, description }: { Icon: any; title: string; description: string }) => (
   <div className="group p-6 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-xl border border-gray-700 transition-all duration-300 hover:scale-105 hover:border-blue-500">
     <div className="w-14 h-14 bg-blue-500/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
       <Icon className="h-7 w-7 text-blue-400" />
@@ -36,7 +35,7 @@ const FeatureCard = ({ Icon, title, description }) => (
 );
 
 // Process step widget
-const ProcessStep = ({ number, title, description }) => (
+const ProcessStep = ({ number, title, description }: { number: string | number; title: string; description: string }) => (
   <div className="flex gap-4">
     <div className="flex-shrink-0">
       <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">

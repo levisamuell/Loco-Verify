@@ -5,16 +5,23 @@ import { authMiddleware } from "@/lib/authMiddleware";
 
 const prisma = new PrismaClient();
 
-// GET /api/vendors/[id] - Get specific vendor
+// Helper to resolve params whether it's a Promise or an object
+async function resolveParams(
+  params: { id: string } | Promise<{ id: string }>
+) {
+  return params instanceof Promise ? await params : params;
+}
+
+// GET /api/vendors/[id]
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } | Promise<{ id: string }> }
 ) {
   try {
+    const { id: vendorId } = await resolveParams(context.params);
+
     const authResponse = await authMiddleware(request);
     if (authResponse) return authResponse;
-
-    const vendorId = params.id;
 
     const vendor = await prisma.user.findUnique({
       where: { id: vendorId },
@@ -36,16 +43,17 @@ export async function GET(
   }
 }
 
-// PUT /api/vendors/[id] - Update vendor information
+// PUT /api/vendors/[id]
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } | Promise<{ id: string }> }
 ) {
   try {
+    const { id: vendorId } = await resolveParams(context.params);
+
     const authResponse = await authMiddleware(request, ["ADMIN"]);
     if (authResponse) return authResponse;
 
-    const vendorId = params.id;
     const body = await request.json();
 
     const existingVendor = await prisma.user.findUnique({
@@ -78,16 +86,16 @@ export async function PUT(
   }
 }
 
-// DELETE /api/vendors/[id] - Delete vendor
+// DELETE /api/vendors/[id]
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } | Promise<{ id: string }> }
 ) {
   try {
+    const { id: vendorId } = await resolveParams(context.params);
+
     const authResponse = await authMiddleware(request, ["ADMIN"]);
     if (authResponse) return authResponse;
-
-    const vendorId = params.id;
 
     const existingVendor = await prisma.user.findUnique({
       where: { id: vendorId },
@@ -97,7 +105,6 @@ export async function DELETE(
       return NextResponse.json({ error: "Vendor not found" }, { status: 404 });
     }
 
-    // Delete vendor (cascade will delete licenses if configured)
     await prisma.user.delete({
       where: { id: vendorId },
     });

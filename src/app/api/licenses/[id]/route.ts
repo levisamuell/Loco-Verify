@@ -5,7 +5,7 @@ import { authMiddleware } from "@/lib/authMiddleware";
 
 const prisma = new PrismaClient();
 
-// Helper to resolve params whether it's a Promise or an object
+// helper for params
 async function resolveParams(params: { id: string } | Promise<{ id: string }>) {
   return params instanceof Promise ? await params : params;
 }
@@ -16,10 +16,10 @@ export async function GET(
   context: { params: { id: string } | Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await resolveParams(context.params);
-
-    const authResponse = await authMiddleware(request);
+    const authResponse = await authMiddleware(request, ["ADMIN"]);
     if (authResponse) return authResponse;
+
+    const { id } = await resolveParams(context.params);
 
     const license = await prisma.license.findUnique({
       where: { id },
@@ -52,11 +52,10 @@ export async function PUT(
   context: { params: { id: string } | Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await resolveParams(context.params);
-
-    const authResponse = await authMiddleware(request, ["OFFICIAL"]);
+    const authResponse = await authMiddleware(request, ["ADMIN"]); // FIXED
     if (authResponse) return authResponse;
 
+    const { id } = await resolveParams(context.params);
     const body = await request.json();
 
     const existingLicense = await prisma.license.findUnique({
@@ -79,20 +78,10 @@ export async function PUT(
       data: {
         status: body.status,
         licenseType: body.licenseType,
-        station: body.station,
-        validityPeriod: body.validityPeriod,
-        documents: body.documents,
-        reviewedBy: body.reviewedBy,
-        reviewedAt: body.status ? new Date() : undefined,
-      },
-      include: {
-        vendor: {
-          select: {
-            name: true,
-            email: true,
-            shopName: true,
-          },
-        },
+        idProofLink: body.idProofLink,
+        shopPhotoLink: body.shopPhotoLink,
+        issueDate: body.issueDate,
+        expiryDate: body.expiryDate,
       },
     });
 
@@ -111,10 +100,10 @@ export async function DELETE(
   context: { params: { id: string } | Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await resolveParams(context.params);
-
-    const authResponse = await authMiddleware(request, ["OFFICIAL"]);
+    const authResponse = await authMiddleware(request, ["ADMIN"]); // FIXED
     if (authResponse) return authResponse;
+
+    const { id } = await resolveParams(context.params);
 
     const existingLicense = await prisma.license.findUnique({
       where: { id },

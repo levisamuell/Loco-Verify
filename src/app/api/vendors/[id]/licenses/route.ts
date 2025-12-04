@@ -5,16 +5,23 @@ import { authMiddleware } from "@/lib/authMiddleware";
 
 const prisma = new PrismaClient();
 
+// Helper to support both {params} and Promise<{params}>
+async function resolveParams(
+  params: { id: string } | Promise<{ id: string }>
+) {
+  return params instanceof Promise ? await params : params;
+}
+
 // GET /api/vendors/[id]/licenses
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } | Promise<{ id: string }> }
 ) {
   try {
+    const { id: vendorId } = await resolveParams(context.params);
+
     const authResponse = await authMiddleware(request, ["ADMIN"]);
     if (authResponse) return authResponse;
-
-    const vendorId = params.id;
 
     // Check if vendor exists (User with role VENDOR)
     const vendor = await prisma.user.findUnique({
@@ -44,7 +51,6 @@ export async function GET(
     const where: any = { vendorId };
     if (status) where.status = status;
 
-    // Fetch licenses
     const licenses = await prisma.license.findMany({
       skip,
       take: limit,
@@ -87,13 +93,14 @@ export async function GET(
 // POST /api/vendors/[id]/licenses
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } | Promise<{ id: string }> }
 ) {
   try {
+    const { id: vendorId } = await resolveParams(context.params);
+
     const authResponse = await authMiddleware(request, ["ADMIN"]);
     if (authResponse) return authResponse;
 
-    const vendorId = params.id;
     const body = await request.json();
 
     const vendor = await prisma.user.findUnique({
