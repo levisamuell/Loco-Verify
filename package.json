@@ -1,0 +1,60 @@
+{
+  "name": "client",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "env-cmd -f .env.development next dev",
+    "build": "next build",
+    "build:staging": "env-cmd -f .env.staging next build",
+    "build:production": "env-cmd -f .env.production next build",
+    "start:staging": "env-cmd -f .env.staging next start",
+    "start:production": "env-cmd -f .env.production next start",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.936.0",
+    "@prisma/client": "^5.22.0",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
+    "formidable": "^3.5.4",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.554.0",
+    "next": "16.0.1",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@next/eslint-plugin-next": "^16.0.1",
+    "@tailwindcss/postcss": "^4.1.17",
+    "@types/bcrypt": "^6.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "@typescript-eslint/parser": "^8.46.3",
+    "autoprefixer": "^10.4.22",
+    "env-cmd": "^10.1.0",
+    "eslint": "^9.39.1",
+    "eslint-config-next": "16.0.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-next": "^0.0.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "postcss": "^8.5.6",
+    "prisma": "^5.22.0",
+    "tailwindcss": "^4.1.17",
+    "tsx": "^4.20.6",
+    "typescript": "^5"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "npx eslint --fix",
+      "npx prettier --write"
+    ]
+  }
+}

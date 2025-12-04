@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  password  String
+  name      String?
+  phone     String?
+  shopName  String?
+  role      Role      @default(VENDOR)
+  createdAt DateTime  @default(now())
+  licenses  License[]
+}
+
+model License {
+  id              String        @id @default(uuid())
+  licenseType     String
+  status          LicenseStatus @default(PENDING)
+  applicationDate DateTime      @default(now())
+  issueDate       DateTime?
+  expiryDate      DateTime?
+  vendorId        String
+  idProofLink     String?
+  shopPhotoLink   String?
+  vendor          User          @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId])
+  @@index([status])
+  @@index([licenseType])
+  @@index([applicationDate])
+}
+
+enum Role {
+  VENDOR
+  ADMIN
+}
+
+enum LicenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
