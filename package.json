@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "env-cmd -f .env.development next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "build:staging": "env-cmd -f .env.staging next build",
     "build:production": "env-cmd -f .env.production next build",
     "start:staging": "env-cmd -f .env.staging next start",
