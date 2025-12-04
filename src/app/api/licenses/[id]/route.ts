@@ -5,19 +5,24 @@ import { authMiddleware } from "@/lib/authMiddleware";
 
 const prisma = new PrismaClient();
 
+// Helper to resolve params whether it's a Promise or an object
+async function resolveParams(params: { id: string } | Promise<{ id: string }>) {
+  return params instanceof Promise ? await params : params;
+}
+
 // GET /api/licenses/[id]
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } | Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await resolveParams(context.params);
+
     const authResponse = await authMiddleware(request);
     if (authResponse) return authResponse;
 
-    const licenseId = params.id;
-
     const license = await prisma.license.findUnique({
-      where: { id: licenseId },
+      where: { id },
       include: {
         vendor: {
           select: {
@@ -44,17 +49,18 @@ export async function GET(
 // PUT /api/licenses/[id]
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } | Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await resolveParams(context.params);
+
     const authResponse = await authMiddleware(request, ["OFFICIAL"]);
     if (authResponse) return authResponse;
 
-    const licenseId = params.id;
     const body = await request.json();
 
     const existingLicense = await prisma.license.findUnique({
-      where: { id: licenseId },
+      where: { id },
     });
 
     if (!existingLicense) {
@@ -69,7 +75,7 @@ export async function PUT(
     }
 
     const updatedLicense = await prisma.license.update({
-      where: { id: licenseId },
+      where: { id },
       data: {
         status: body.status,
         licenseType: body.licenseType,
@@ -102,16 +108,16 @@ export async function PUT(
 // DELETE /api/licenses/[id]
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } | Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await resolveParams(context.params);
+
     const authResponse = await authMiddleware(request, ["OFFICIAL"]);
     if (authResponse) return authResponse;
 
-    const licenseId = params.id;
-
     const existingLicense = await prisma.license.findUnique({
-      where: { id: licenseId },
+      where: { id },
     });
 
     if (!existingLicense) {
@@ -119,7 +125,7 @@ export async function DELETE(
     }
 
     await prisma.license.delete({
-      where: { id: licenseId },
+      where: { id },
     });
 
     return NextResponse.json({
