@@ -1,29 +1,24 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcrypt";
-import { PrismaClient, Role } from "../../../../../node_modules/.prisma/client";
-import { handleError } from "../../../../lib/errorHandler"; // ADD THIS IMPORT
+import bcrypt from "bcryptjs";
+import { PrismaClient, Role } from "@prisma/client";
+import { handleError } from "@/lib/errorHandler";
 
 const prisma = new PrismaClient();
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const {
-      name,
-      email,
-      password,
-      phone,
-      shopName,
-      role = Role.VENDOR, // This should work now!
-    } = body;
 
+    const { name, email, password, phone, shopName, role = Role.VENDOR } = body;
+
+    // Validate required fields
     if (!name || !email || !password) {
       const error = new Error("Name, email, and password are required");
       error.name = "ValidationError";
       throw error;
     }
 
-    // Check if user already exists
+    // Check if email already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -34,11 +29,9 @@ export async function POST(request: Request) {
       throw error;
     }
 
-    // Validate role - use Object.values() instead of direct enum values
+    // Validate role
     if (role && !Object.values(Role).includes(role)) {
-      const error = new Error(
-        "Invalid role. Must be either 'VENDOR' or 'ADMIN'"
-      );
+      const error = new Error("Invalid role. Must be VENDOR or ADMIN");
       error.name = "ValidationError";
       throw error;
     }
@@ -46,7 +39,7 @@ export async function POST(request: Request) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
+    // Create user
     const newUser = await prisma.user.create({
       data: {
         name,
@@ -54,7 +47,7 @@ export async function POST(request: Request) {
         password: hashedPassword,
         phone: phone || null,
         shopName: shopName || null,
-        role: role,
+        role,
       },
       select: {
         id: true,
@@ -72,8 +65,6 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (error) {
-    return handleError(error, "POST /api/auth/signup"); // REPLACE ERROR HANDLING
-  } finally {
-    await prisma.$disconnect();
+    return handleError(error, "POST /api/auth/signup");
   }
 }

@@ -5,13 +5,12 @@ import { authMiddleware } from "@/lib/authMiddleware";
 
 const prisma = new PrismaClient();
 
-// GET /api/licenses/[id] - Get specific license by ID
+// GET /api/licenses/[id]
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Apply authentication middleware
     const authResponse = await authMiddleware(request);
     if (authResponse) return authResponse;
 
@@ -25,8 +24,8 @@ export async function GET(
             id: true,
             name: true,
             email: true,
-            businessName: true,
             phone: true,
+            shopName: true,
           },
         },
       },
@@ -38,24 +37,22 @@ export async function GET(
 
     return NextResponse.json({ data: license });
   } catch (error) {
-    return errorHandler(error);
+    return handleError(error, "GET /api/licenses/[id]");
   }
 }
 
-// PUT /api/licenses/[id] - Update a license (for status changes, approvals, etc.)
+// PUT /api/licenses/[id]
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Apply authentication middleware - only officials can update licenses
     const authResponse = await authMiddleware(request, ["OFFICIAL"]);
     if (authResponse) return authResponse;
 
     const licenseId = params.id;
     const body = await request.json();
 
-    // Check if license exists
     const existingLicense = await prisma.license.findUnique({
       where: { id: licenseId },
     });
@@ -64,7 +61,6 @@ export async function PUT(
       return NextResponse.json({ error: "License not found" }, { status: 404 });
     }
 
-    // Validate status if provided
     if (body.status && !Object.values(LicenseStatus).includes(body.status)) {
       return NextResponse.json(
         { error: "Invalid license status" },
@@ -72,7 +68,6 @@ export async function PUT(
       );
     }
 
-    // Update license
     const updatedLicense = await prisma.license.update({
       where: { id: licenseId },
       data: {
@@ -82,14 +77,14 @@ export async function PUT(
         validityPeriod: body.validityPeriod,
         documents: body.documents,
         reviewedBy: body.reviewedBy,
-        reviewedAt: body.status ? new Date() : undefined, // Auto-set review date on status change
+        reviewedAt: body.status ? new Date() : undefined,
       },
       include: {
         vendor: {
           select: {
             name: true,
-            businessName: true,
             email: true,
+            shopName: true,
           },
         },
       },
@@ -100,23 +95,21 @@ export async function PUT(
       data: updatedLicense,
     });
   } catch (error) {
-    return errorHandler(error);
+    return handleError(error, "PUT /api/licenses/[id]");
   }
 }
 
-// DELETE /api/licenses/[id] - Delete a license
+// DELETE /api/licenses/[id]
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    // Apply authentication middleware - only officials can delete
     const authResponse = await authMiddleware(request, ["OFFICIAL"]);
     if (authResponse) return authResponse;
 
     const licenseId = params.id;
 
-    // Check if license exists
     const existingLicense = await prisma.license.findUnique({
       where: { id: licenseId },
     });
@@ -125,7 +118,6 @@ export async function DELETE(
       return NextResponse.json({ error: "License not found" }, { status: 404 });
     }
 
-    // Delete license
     await prisma.license.delete({
       where: { id: licenseId },
     });
@@ -134,6 +126,6 @@ export async function DELETE(
       message: "License deleted successfully",
     });
   } catch (error) {
-    return errorHandler(error);
+    return handleError(error, "DELETE /api/licenses/[id]");
   }
 }

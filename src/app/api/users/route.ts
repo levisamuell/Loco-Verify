@@ -1,18 +1,16 @@
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
 import { PrismaClient, Role } from "@prisma/client";
-import { handleError } from "../../../lib/errorHandler"; // Add this import
+import { handleError } from "@/lib/errorHandler";
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
 
-// ✅ GET route — Verify token, fetch user, and authorize by role
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get("authorization");
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      // Convert this to use error throwing for consistent handling
       const error = new Error("Authorization token missing or invalid format");
       error.name = "ValidationError";
       throw error;
@@ -23,7 +21,7 @@ export async function GET(request: Request) {
     let decoded;
     try {
       decoded = jwt.verify(token, JWT_SECRET) as {
-        id: number;
+        id: string;
         email: string;
         role: string;
       };
@@ -33,9 +31,9 @@ export async function GET(request: Request) {
       throw error;
     }
 
-    // 🧩 Fetch user from database
+    // Fetch user 
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id.toString() },
+      where: { id: decoded.id },
       select: {
         id: true,
         name: true,
@@ -51,26 +49,22 @@ export async function GET(request: Request) {
       throw error;
     }
 
-    // 🧠 Role-based access example
-    if (user.role !== Role.VENDOR && user.role !== Role.ADMIN) {
+    // Allow only VENDOR or ADMIN
+    if (![Role.VENDOR, Role.ADMIN].includes(user.role)) {
       const error = new Error("Access denied. Invalid role.");
       error.name = "UnauthorizedError";
       throw error;
     }
 
-    // ✅ Success — send user info
     return NextResponse.json(
       {
         success: true,
-        message: `Access granted. Hello ${user.role === "ADMIN" ? "ADMIN" : "VENDOR"}!`,
+        message: `Access granted. Hello ${user.role}!`,
         user,
       },
       { status: 200 }
     );
   } catch (error) {
-    // Use the centralized error handler instead of manual error responses
     return handleError(error, "GET /api/users");
-  } finally {
-    await prisma.$disconnect();
   }
 }

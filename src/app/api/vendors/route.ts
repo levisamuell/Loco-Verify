@@ -1,26 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import { handleError } from "@/lib/errorHandler";
-// import { authMiddleware } from '@/lib/authMiddleware';
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 // GET /api/vendors - List all vendors with pagination
 export async function GET(request: NextRequest) {
   try {
-    // Apply authentication middleware
-    // const authResponse = await authMiddleware(request);
-    // if (authResponse) return authResponse;
-
-    // Get pagination parameters
     const { searchParams } = new URL(request.url);
     const page = Number(searchParams.get("page")) || 1;
     const limit = Number(searchParams.get("limit")) || 10;
     const skip = (page - 1) * limit;
 
-    // Fetch vendors with pagination
     const vendors = await prisma.user.findMany({
-      where: { role: "VENDOR" },
+      where: { role: Role.VENDOR },
       skip,
       take: limit,
       select: {
@@ -35,9 +29,8 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    // Get total count for pagination info
     const total = await prisma.user.count({
-      where: { role: "VENDOR" },
+      where: { role: Role.VENDOR },
     });
 
     return NextResponse.json({
@@ -58,36 +51,34 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const { name, email, password, phone, shopName } = body;
 
-    // Basic validation
-    if (!body.name || !body.email || !body.password) {
-      return NextResponse.json(
-        { error: "Name, email, and password are required" },
-        { status: 400 }
-      );
+    if (!name || !email || !password) {
+      const error = new Error("Name, email, and password are required");
+      error.name = "ValidationError";
+      throw error;
     }
 
-    // Check if vendor already exists
     const existingVendor = await prisma.user.findUnique({
-      where: { email: body.email },
+      where: { email },
     });
 
     if (existingVendor) {
-      return NextResponse.json(
-        { error: "Vendor with this email already exists" },
-        { status: 409 }
-      );
+      const error = new Error("Vendor with this email already exists");
+      error.name = "ValidationError";
+      throw error;
     }
 
-    // Create new vendor (as a user with VENDOR role)
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const vendor = await prisma.user.create({
       data: {
-        name: body.name,
-        email: body.email,
-        password: body.password, // Note: You should hash this password
-        phone: body.phone,
-        shopName: body.shopName,
-        role: "VENDOR",
+        name,
+        email,
+        password: hashedPassword,
+        phone: phone || null,
+        shopName: shopName || null,
+        role: Role.VENDOR,
       },
       select: {
         id: true,

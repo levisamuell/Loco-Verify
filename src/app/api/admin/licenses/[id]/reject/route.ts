@@ -6,12 +6,12 @@ const prisma = new PrismaClient();
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params;
+
   const authResponse = await authMiddleware(request, ["ADMIN"]);
   if (authResponse) return authResponse;
-
-  const { id } = params;
 
   const updated = await prisma.license.update({
     where: { id },
